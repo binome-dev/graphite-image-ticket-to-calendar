@@ -1,10 +1,9 @@
 import os
 from fastapi import FastAPI
-
-
 from image_to_calendar.assistant.image_to_calendar_agent import ImageToCalendar
 
-laod_dotenv()
+
+
 
 openai_key = os.getenv("OPENAI_KEY")
 

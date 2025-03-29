@@ -1,6 +1,7 @@
 import os
 from pydantic import Field
 from grafi.assistants.assistant import Assistant
+from grafi.common.topics.topic import human_request_topic
 from grafi.common.topics.output_topic import agent_output_topic
 from grafi.common.topics.topic import Topic, agent_input_topic
 from grafi.common.topics.subscription_builder import SubscriptionBuilder
@@ -8,10 +9,9 @@ from grafi.nodes.impl.llm_node import LLMNode
 from grafi.nodes.impl.llm_function_call_node import LLMFunctionCallNode
 from grafi.tools.llms.impl.openai_tool import OpenAITool
 from grafi.tools.llms.llm_response_command import LLMResponseCommand
-from grafi.tools.functions.function_tool import FunctionTool
 from grafi.tools.functions.function_calling_command import FunctionCallingCommand
 from grafi.workflows.impl.event_driven_workflow import EventDrivenWorkflow
-
+from image_to_calendar.assistant.additional_functions import AskUserTool, CalendarTool
 
 
 
@@ -40,7 +40,7 @@ class ImageToCalendar(Assistant):
             return self
         
         def event_extraction_system_message(self, event_extraction_prompt: str) -> "ImageToCalendar.Builder":
-            self._assistant.event_extraction_system_message = event_extraction_system_message
+            self._assistant.event_extraction_system_message = event_extraction_prompt
             return self
 
         def action_llm_system_message(self, action_llm_system_message: str) -> "ImageToCalendar.Builder":
@@ -55,7 +55,7 @@ class ImageToCalendar(Assistant):
             self._assistant.summary_llm_system_message = summary_llm_system_message
             return self
 
-        def model(self) -> "ImageToCalendar.Builder":
+        def model(self, model: str) -> "ImageToCalendar.Builder":
             self._assistant.model = model
             return self
         
@@ -65,17 +65,25 @@ class ImageToCalendar(Assistant):
 
     def _construct_workflow(self):
 
+        #Pre-defined functions
+        self.ask_user = AskUserTool.Builder() .name("ask_user") .function(AskUserTool().ask_user).build()
+        self.add_event_to_calendar = CalendarTool.Builder().name("add_event_to_calendar").function(CalendarTool().add_event_to_calendar).build()
+
+
         workflow_agent = EventDrivenWorkflow.Builder().name("ImageToCalendarWorkflow")
 
         # All the required Topics:
         event_extracted_topic = Topic(name="event_extracted_topic")
-        incomplete_info_topic = Topic(name="incomplete_info_topic",
-            condition=lambda msgs: msgs[-1].tool_calls and msgs[-1].tool_calls[0].function.name == "ask_user"  # These functions still need to be defined
+        incomplete_info_topic = Topic(
+            name="incomplete_info_topic",
+            condition=lambda msgs: msgs[-1].tool_calls and msgs[-1].tool_calls[0].function.name == "ask_user"
         )
-        complete_info_topic = Topic(name="complete_info_topic",
+        complete_info_topic = Topic(
+            name="complete_info_topic",
             condition=lambda msgs: msgs[-1].tool_calls and msgs[-1].tool_calls[0].function.name == "add_event_to_calendar"
         )
         calendar_response_topic = Topic(name="calendar_response_topic")
+        human_request_topic = Topic(name="human_request_topic")
 
 
         vision_node = (
@@ -140,6 +148,7 @@ class ImageToCalendar(Assistant):
         workflow_agent.node(additional_info_node)
 
         #This node will be requiring an additional function called add_event_to_calendar to post the event
+
         calendar_node = (
             LLMFunctionCallNode.Builder()
             .name("CalendarNode")
@@ -166,7 +175,7 @@ class ImageToCalendar(Assistant):
                     .name("SummaryLLM")
                     .api_key(self.api_key)
                     .model(self.model)
-                    .system_message(summary_llm_system_message)
+                    .system_message(self.summary_llm_system_message)
                     .build()
                 )
                 .build()
