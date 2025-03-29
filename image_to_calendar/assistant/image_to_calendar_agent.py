@@ -1,7 +1,8 @@
 import os
 from pydantic import Field
 from grafi.assistants.assistant import Assistant
-from grafi.common.topics.topic import Topic, agent_input_topic, agent_output_topic, human_request_topic
+from grafi.common.topics.output_topic import agent_output_topic
+from grafi.common.topics.topic import Topic, agent_input_topic
 from grafi.common.topics.subscription_builder import SubscriptionBuilder
 from grafi.nodes.impl.llm_node import LLMNode
 from grafi.nodes.impl.llm_function_call_node import LLMFunctionCallNode
@@ -10,7 +11,8 @@ from grafi.tools.llms.llm_response_command import LLMResponseCommand
 from grafi.tools.functions.function_tool import FunctionTool
 from grafi.tools.functions.function_calling_command import FunctionCallingCommand
 from grafi.workflows.impl.event_driven_workflow import EventDrivenWorkflow
-from openinference.semconv.trace import OpenInferenceSpanKindValues
+
+
 
 
 class ImageToCalendar(Assistant):
