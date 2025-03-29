@@ -1,14 +1,16 @@
 [tool.poetry]
-name = "graphite-demo-email-processor"
+name = "graphite-image-ticket-to-calendar"
 version = "0.1.0"
-description = "Email processor with Graphite"
-authors = ["Your Name <you@example.com>"]
+description = "Image processor with Graphite"
+authors = ["Yuriy Mud <yuriy.mud3@gmail.com>"]
+
+
 license = "Mozilla Public License 2.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
-grafi = { path = "grafi_dist/grafi-0.0.1-py3-none-any.whl" }
+grafi = "0.0.7"
 fastapi = "^0.115.11"
 uvicorn = "^0.34.0"
 requests = "^2.32.3"

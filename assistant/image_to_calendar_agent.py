@@ -1,7 +1,6 @@
 import os
 from pydantic import Field
 from grafi.assistants.assistant import Assistant
-from grafi.common.topics.topic import human_request_topic
 from grafi.common.topics.output_topic import agent_output_topic
 from grafi.common.topics.topic import Topic, agent_input_topic
 from grafi.common.topics.subscription_builder import SubscriptionBuilder
@@ -11,12 +10,21 @@ from grafi.tools.llms.impl.openai_tool import OpenAITool
 from grafi.tools.llms.llm_response_command import LLMResponseCommand
 from grafi.tools.functions.function_calling_command import FunctionCallingCommand
 from grafi.workflows.impl.event_driven_workflow import EventDrivenWorkflow
-from image_to_calendar.assistant.additional_functions import AskUserTool, CalendarTool
+from assistant.additional_functions import AskUserTool, CalendarTool
+from openinference.semconv.trace import OpenInferenceSpanKindValues
+from typing import Any
+
 
 
 
 class ImageToCalendar(Assistant):
 
+
+    ask_user: Any = Field(default=None)
+    add_event_to_calendar: Any = Field(default=None)
+    oi_span_type: OpenInferenceSpanKindValues = Field(
+        default=OpenInferenceSpanKindValues.AGENT
+    )
     name: str = Field(default="Assistant")
     type: str = Field(default="Assistant")
     api_key: str = Field(default_factory=lambda: os.getenv("OPENAI_API_KEY"))
@@ -30,7 +38,7 @@ class ImageToCalendar(Assistant):
     class Builder(Assistant.Builder):
 
         def __init__(self):
-            self._assistant = self.init_assistant()
+            self._assistant = self._init_assistant()
         
         def _init_assistant(self) -> "ImageToCalendar.Builder":
             return ImageToCalendar()
