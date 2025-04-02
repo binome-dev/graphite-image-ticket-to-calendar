@@ -3,7 +3,6 @@ from pydantic import Field
 from grafi.assistants.assistant import Assistant
 from grafi.common.topics.output_topic import agent_output_topic
 from grafi.common.topics.topic import Topic, agent_input_topic
-from grafi.common.topics.subscription_builder import SubscriptionBuilder
 from grafi.nodes.impl.llm_node import LLMNode
 from grafi.nodes.impl.llm_function_call_node import LLMFunctionCallNode
 from grafi.tools.llms.impl.openai_tool import OpenAITool
@@ -32,7 +31,7 @@ class ImageToCalendar(Assistant):
     observation_llm_system_message: str = Field(default=None)
     action_llm_system_message: str = Field(default=None)
     summary_llm_system_message: str = Field(default=None)
-    model: str = Field(default="gpt-4o-mini")
+    model: str = Field(default="gpt-4o")
 
 
     class Builder(Assistant.Builder):
@@ -104,7 +103,7 @@ class ImageToCalendar(Assistant):
                 OpenAITool.Builder()
                 .name("VisionLLM")
                 .api_key(self.api_key)
-                .model("gpt-4-vision-preview") 
+                .model(self.model) 
                 .system_message(self.event_extraction_system_message)  
                 .build()
             )
@@ -139,7 +138,7 @@ class ImageToCalendar(Assistant):
 
         workflow_agent.node(action_node)
  
-        #This node will be requiring an additional function called ask_user to request more info
+        
         additional_info_node = (
             LLMFunctionCallNode.Builder()
             .name("AskUserNode")
@@ -155,7 +154,6 @@ class ImageToCalendar(Assistant):
 
         workflow_agent.node(additional_info_node)
 
-        #This node will be requiring an additional function called add_event_to_calendar to post the event
 
         calendar_node = (
             LLMFunctionCallNode.Builder()

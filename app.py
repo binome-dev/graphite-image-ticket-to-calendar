@@ -1,12 +1,15 @@
 import os
 import uuid
 import base64
+import json
 
 from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from assistant.image_to_calendar_agent import ImageToCalendar
 from grafi.common.models.execution_context import ExecutionContext
-from grafi.common.models.message import Message
+from grafi.common.models.message import Message 
+
 
 
 
@@ -22,7 +25,6 @@ app.add_middleware(
     allow_methods=["*"],  
     allow_headers=["*"],  
 )
-
 
 
 event_extraction_system_message = """
@@ -67,7 +69,6 @@ Make sure the summary is friendly, easy to understand, and reaffirms the event w
 """
 
 
-
 assistant = (
     ImageToCalendar.Builder()
     .api_key(openai_key) 
@@ -75,7 +76,7 @@ assistant = (
     .action_llm_system_message(action_llm_system_message)
     .observation_llm_system_message(observation_llm_system_message)
     .summary_llm_system_message(summary_llm_system_message)
-    .model("gpt-4o-mini")
+    .model("gpt-4o")
     .build()
 )
 
@@ -85,27 +86,28 @@ def root():
     return {"message": "Image-to-calendar AI agent is running!"}
 
 
-#This is just for testing purposes, in reality the image will be receiced as a POST request which will be done after the intial testing
+@app.get("/test-local/{filename}")
+def test_local(filename: str):
+    image_path = f"test_images/{filename}"
 
-@app.get("/test-local")
-def test_local():
-    image_path = "test_image.png"  # replace with your test image path
 
-  
     with open(image_path, "rb") as f:
         image_bytes = f.read()
 
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-    image_data_url = f"data:image/png;base64,{image_base64}"
 
-  
-    image_block = {
-        "type": "image_url",
-        "image_url": {
-            "url": image_data_url
-        }
-    }
 
+    message1 = Message(
+    role="user",
+    content=f"data:image/jpeg;base64,{image_base64}")
+
+    #message2 = Message(
+     #   role="user",
+     #   content="Extract the information from the image as per instructions"
+   # )
+
+
+    input_data = [message1]
 
     execution_context = ExecutionContext(
         conversation_id=uuid.uuid4().hex,
@@ -114,19 +116,10 @@ def test_local():
     )
 
 
-    input_data = [
-        Message(
-            role="user",
-            content=[
-                {"type": "text", "text": "Please extract event details from this image."},
-                image_block
-            ]
-        )
-    ]
-
     output = assistant.execute(execution_context, input_data)
+
 
     return {
         "execution_context": execution_context.model_dump(),
-        "response": output[0].content,
+        "response": output[0].content
     }

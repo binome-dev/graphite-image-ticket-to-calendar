@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Image processor with Graphite"
 authors = ["Yuriy Mud <yuriy.mud3@gmail.com>"]
 
-
 license = "Mozilla Public License 2.0"
 readme = "README.md"
 
