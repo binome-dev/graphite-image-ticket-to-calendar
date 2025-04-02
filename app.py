@@ -101,13 +101,10 @@ def test_local(filename: str):
     role="user",
     content=f"data:image/jpeg;base64,{image_base64}")
 
-    #message2 = Message(
-     #   role="user",
-     #   content="Extract the information from the image as per instructions"
-   # )
+    message2 = Message(role="user", content="Extract the information from the image as per instructions")
 
 
-    input_data = [message1]
+    input_data = [message1, message2]
 
     execution_context = ExecutionContext(
         conversation_id=uuid.uuid4().hex,
