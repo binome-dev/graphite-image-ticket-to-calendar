@@ -10,7 +10,23 @@ from assistant.image_to_calendar_agent import ImageToCalendar
 from grafi.common.models.execution_context import ExecutionContext
 from grafi.common.models.message import Message 
 
+from grafi.common.models.default_id import default_id
 
+import time
+from typing import Iterable, Literal, Optional, Union, List, Dict
+from pydantic import Field
+from openai.types.chat.chat_completion import ChatCompletionMessage
+from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
+
+
+class TestMessage(ChatCompletionMessage):  
+    name: Optional[str] = None
+    message_id: str = default_id
+    timestamp: int = Field(default_factory=time.time_ns)
+    role: Literal["system", "user", "assistant", "tool"]
+    tool_call_id: Optional[str] = None
+    tools: Optional[Iterable[ChatCompletionToolParam]] = None
+    content: Union[str, List[Dict]]  
 
 
 openai_key = os.getenv("OPENAI_KEY")
@@ -86,10 +102,10 @@ def root():
     return {"message": "Image-to-calendar AI agent is running!"}
 
 
+
 @app.get("/test-local/{filename}")
 def test_local(filename: str):
     image_path = f"test_images/{filename}"
-
 
     with open(image_path, "rb") as f:
         image_bytes = f.read()
@@ -97,14 +113,13 @@ def test_local(filename: str):
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
 
-    message1 = Message(
-    role="user",
-    content=f"data:image/jpeg;base64,{image_base64}")
+    multimodal_payload = json.dumps([
+        {"type": "text", "text": "Extract important info as per instructions"},
+        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+    ])
 
-    message2 = Message(role="user", content="Extract the information from the image as per instructions")
 
-
-    input_data = [message1, message2]
+    message = Message(role="user", content=multimodal_payload)
 
     execution_context = ExecutionContext(
         conversation_id=uuid.uuid4().hex,
@@ -112,9 +127,7 @@ def test_local(filename: str):
         execution_id=uuid.uuid4().hex,
     )
 
-
-    output = assistant.execute(execution_context, input_data)
-
+    output = assistant.execute(execution_context, [message])
 
     return {
         "execution_context": execution_context.model_dump(),

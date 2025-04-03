@@ -72,14 +72,15 @@ class ImageToCalendar(Assistant):
 
     def _construct_workflow(self):
 
-        #Pre-defined functions
-        self.ask_user = AskUserTool.Builder() .name("ask_user") .function(AskUserTool().ask_user).build()
-        self.add_event_to_calendar = CalendarTool.Builder().name("add_event_to_calendar").function(CalendarTool().add_event_to_calendar).build()
+      
+        self.ask_user = AskUserTool.Builder().name("ask_user").function(AskUserTool.ask_user).build()
+
+        self.add_event_to_calendar = CalendarTool.Builder().name("add_event_to_calendar").function(CalendarTool.add_event_to_calendar).build()
 
 
         workflow_agent = EventDrivenWorkflow.Builder().name("ImageToCalendarWorkflow")
 
-        # All the required Topics:
+     
         event_extracted_topic = Topic(name="event_extracted_topic")
         incomplete_info_topic = Topic(
             name="incomplete_info_topic",
@@ -112,6 +113,7 @@ class ImageToCalendar(Assistant):
         .publish_to(event_extracted_topic)
         .build()
         )
+        
         workflow_agent.node(vision_node)
 
 
