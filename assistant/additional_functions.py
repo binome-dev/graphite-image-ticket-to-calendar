@@ -5,15 +5,23 @@ from grafi.common.decorators.llm_function import llm_function
 
 class AskUserTool(FunctionTool):
 
+    @staticmethod
     @llm_function
-    def ask_user(self, missing_fields: list[str], extracted_data: dict) -> str:
-        
-        "This function was designed to handle missing data, say one of: date/time/location/title is missing, it will request more info on the missing one"
+    def ask_user(
+    *args,
+    missing_fields: list[str],
+    extracted_data: dict,
+    **kwargs 
+) -> str:
+        """
+        This function handles missing data (e.g. date, time, location, or title)
+        and returns a natural language question asking the user for more info.
+        """
 
-        question_parts = []
-
-        for field in missing_fields:
-            question_parts.append(f"Please provide the event's {field.replace('_', ' ')}.")
+        question_parts = [
+            f"Please provide the event's {field.replace('_', ' ')}."
+            for field in missing_fields
+        ]
 
         question = " ".join(question_parts)
 
@@ -21,16 +29,23 @@ class AskUserTool(FunctionTool):
 
 class CalendarTool(FunctionTool):
 
+    @staticmethod
     @llm_function
-    def add_event_to_calendar(self, event_title: str, event_date: str, 
+    def add_event_to_calendar(
+        *args,  
+        event_title: str,
+        event_date: str,
         start_time: str = None,
         end_time: str = None,
-        location: str = None
+        location: str = None,
+        **kwargs 
     ) -> str:
 
-        result = {"status": "success",
-        "event": 
-            {
+
+
+        result = {
+            "status": "success",
+            "event": {
                 "title": event_title,
                 "date": event_date,
                 "start_time": start_time,

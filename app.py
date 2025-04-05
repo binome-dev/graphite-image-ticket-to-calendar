@@ -4,29 +4,15 @@ import base64
 import json
 
 from fastapi import FastAPI
-from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from assistant.image_to_calendar_agent import ImageToCalendar
 from grafi.common.models.execution_context import ExecutionContext
 from grafi.common.models.message import Message 
 
 from grafi.common.models.default_id import default_id
-
-import time
-from typing import Iterable, Literal, Optional, Union, List, Dict
-from pydantic import Field
 from openai.types.chat.chat_completion import ChatCompletionMessage
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-
-class TestMessage(ChatCompletionMessage):  
-    name: Optional[str] = None
-    message_id: str = default_id
-    timestamp: int = Field(default_factory=time.time_ns)
-    role: Literal["system", "user", "assistant", "tool"]
-    tool_call_id: Optional[str] = None
-    tools: Optional[Iterable[ChatCompletionToolParam]] = None
-    content: Union[str, List[Dict]]  
 
 
 openai_key = os.getenv("OPENAI_KEY")
@@ -44,26 +30,39 @@ app.add_middleware(
 
 
 event_extraction_system_message = """
-You are an AI assistant responsible for extracting calendar event information from uploaded images. 
-Your task is to analyze the image and return all relevant event details, including the title, date, time, and location.
+You are an AI assistant responsible for extracting calendar event information from uploaded images.
+Your task is to analyze the image and return all relevant event details, including:
 
-This is the JSON format I expect:
+- title
+- date (in YYYY-MM-DD format)
+- start_time (in HH:MM, 24-hour format)
+- end_time (in HH:MM, 24-hour format, optional if not present)
+- location
+
+Return the result in this exact JSON structure:
 
 {
   "title": "Event Title",
   "date": "YYYY-MM-DD",
-  "time": "HH:MM",
+  "start_time": "HH:MM",
+  "end_time": "HH:MM",
   "location": "Event Location"
 }
 
-Ensure the data is structured clearly and consistently in this format.
+If the end time isn't specified, you can omit it or leave it as null.
 """
 
 
 action_llm_system_message = """
 You are an AI assistant responsible for analyzing extracted event information and determining whether it is complete. 
-If any required fields (title, date, time, location) are missing or unclear, call the function `ask_user` to request clarification. 
+If any required fields (title, date, time, location) are missing or unclear, call the function `ask_user` to request clarification.
+
+- When calling `ask_user`, always include:
+  - `missing_fields`: a list of the missing field names
+  - `extracted_data`: a dictionary containing the event fields that were successfully extracted
+
 If the information is sufficient, call the function `add_event_to_calendar` to proceed with saving the event.
+
 """
 
 observation_llm_system_message = """
@@ -101,8 +100,6 @@ assistant = (
 def root():
     return {"message": "Image-to-calendar AI agent is running!"}
 
-
-
 @app.get("/test-local/{filename}")
 def test_local(filename: str):
     image_path = f"test_images/{filename}"
@@ -113,13 +110,20 @@ def test_local(filename: str):
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
 
-    multimodal_payload = json.dumps([
-        {"type": "text", "text": "Extract important info as per instructions"},
-        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
-    ])
-
-
-    message = Message(role="user", content=multimodal_payload)
+    input_data = [
+        Message(
+            content=[
+                {"type": "text", "text": "Extract important info as per your instructions"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{image_base64}",
+                    },
+                },
+            ],
+            role="user",
+        )
+    ]
 
     execution_context = ExecutionContext(
         conversation_id=uuid.uuid4().hex,
@@ -127,9 +131,10 @@ def test_local(filename: str):
         execution_id=uuid.uuid4().hex,
     )
 
-    output = assistant.execute(execution_context, [message])
+    output = assistant.execute(execution_context, input_data)
 
     return {
         "execution_context": execution_context.model_dump(),
         "response": output[0].content
     }
+

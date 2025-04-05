@@ -1,11 +1,12 @@
+version: "3.9"
 
 services:
 
   phoenix:
     image: arizephoenix/phoenix:latest
     ports:
-      - "6006:6006"
-      - "4317:4317"
+      - "6006:6006"   # Phoenix UI
+      - "4317:4317"   # OTLP gRPC for tracing
     networks:
       - net
 
@@ -19,7 +20,8 @@ services:
       - .env
     environment:
       ENV: docker
-      PHOENIX_ENDPOINT: http://phoenix:4317  
+      PHOENIX_ENDPOINT: http://phoenix:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://phoenix:4317
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
