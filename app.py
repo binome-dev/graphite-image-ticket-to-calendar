@@ -5,13 +5,12 @@ import json
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, UploadFile, File
+
+
 from assistant.image_to_calendar_agent import ImageToCalendar
 from grafi.common.models.execution_context import ExecutionContext
 from grafi.common.models.message import Message 
-
-from grafi.common.models.default_id import default_id
-from openai.types.chat.chat_completion import ChatCompletionMessage
-from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
 
 
@@ -138,3 +137,42 @@ def test_local(filename: str):
         "response": output[0].content
     }
 
+
+@app.post("/test-upload/")
+async def test_upload(file: UploadFile = File(...)):
+    
+    image_bytes = await file.read()
+    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+    
+
+    mime_type = file.content_type  # It would make more sense not to hardcode the type as different users will have different image types
+    
+    input_data = [
+        Message(
+            content=[
+                {"type": "text", "text": "Extract important info as per your instructions"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{mime_type};base64,{image_base64}",
+                    },
+                },
+            ],
+            role="user",
+        )
+    ]
+    
+    execution_context = ExecutionContext(
+        conversation_id=uuid.uuid4().hex,
+        assistant_request_id=uuid.uuid4().hex,
+        execution_id=uuid.uuid4().hex,
+    )
+    
+    output = assistant.execute(execution_context, input_data)
+    
+    # output = await assistant.execute(execution_context, input_data)
+    
+    return {
+        "execution_context": execution_context.model_dump(),
+        "response": output[0].content
+    }
