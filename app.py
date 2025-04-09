@@ -3,6 +3,12 @@ import uuid
 import base64
 import json
 
+from google_auth_oauthlib.flow import Flow
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
+
+from fastapi.responses import RedirectResponse
+from fastapi import Request
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File
@@ -12,6 +18,10 @@ from assistant.image_to_calendar_agent import ImageToCalendar
 from grafi.common.models.execution_context import ExecutionContext
 from grafi.common.models.message import Message 
 
+
+GOOGLE_CLIENT_SECRETS_FILE = "client_secret.json"
+SCOPES = ["https://www.googleapis.com/auth/calendar"]
+REDIRECT_URI = "http://localhost:8000/oauth2callback"
 
 
 openai_key = os.getenv("OPENAI_KEY")
@@ -176,3 +186,32 @@ async def test_upload(file: UploadFile = File(...)):
         "execution_context": execution_context.model_dump(),
         "response": output[0].content
     }
+
+
+
+@app.get("/login")
+def login():
+    flow = Flow.from_client_secrets_file(
+        GOOGLE_CLIENT_SECRETS_FILE,
+        scopes=SCOPES,
+        redirect_uri=REDIRECT_URI,
+    )
+    authorization_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true"
+    )
+    
+    return RedirectResponse(authorization_url)
+
+
+
+@app.get("/oauth2callback")
+def oauth2callback(request: Request):
+    flow = Flow.from_client_secrets_file(
+        GOOGLE_CLIENT_SECRETS_FILE,
+        scopes=SCOPES,
+        redirect_uri=REDIRECT_URI
+    )
+    flow.fetch_token(authorization_response=str(request.url))
+
+    credentials = flow.credentials 

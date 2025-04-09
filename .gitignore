@@ -1,3 +1,7 @@
+# Sensitive credentials
+credentials.json
+service_account.json
+
 # Byte-compiled / optimized / DLL files
 test_images/
 
