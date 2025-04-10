@@ -8,6 +8,14 @@ from grafi.common.decorators.llm_function import llm_function
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+calendar_id = os.getenv("GOOGLE_CALENDAR_ID", "primary")
+
+print("📅 Using calendar ID:", calendar_id)
+
 
 class AskUserTool(FunctionTool):
 
@@ -38,35 +46,7 @@ class CalendarTool(FunctionTool):
     @staticmethod
     @llm_function
     def add_event_to_calendar(
-        *args,  
-        event_title: str,
-        event_date: str,
-        start_time: str = None,
-        end_time: str = None,
-        location: str = None,
-        **kwargs 
-    ) -> str:
-
-
-
-        result = {
-            "status": "success",
-            "event": {
-                "title": event_title,
-                "date": event_date,
-                "start_time": start_time,
-                "end_time": end_time,
-                "location": location
-            }
-        }
-
-        return json.dumps(result)
-    
-    @staticmethod
-    @llm_function
-    def add_event_to_calendar_v2(
         *args,
-        credentials,  
         event_title: str,
         event_date: str,
         start_time: str = None,
@@ -74,6 +54,16 @@ class CalendarTool(FunctionTool):
         location: str = None,
         **kwargs
     ) -> str:
+        """
+        Adds an event to Google Calendar using a service account.
+        """
+
+        SERVICE_ACCOUNT_FILE = "secrets/service-account.json"
+        SCOPES = ["https://www.googleapis.com/auth/calendar"]
+
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        )
         service = build("calendar", "v3", credentials=credentials)
 
         if start_time:
@@ -100,7 +90,7 @@ class CalendarTool(FunctionTool):
         if location:
             event["location"] = location
 
-        created_event = service.events().insert(calendarId="primary", body=event).execute()
+        created_event = service.events().insert(calendarId=calendar_id, body=event).execute()
 
         return json.dumps({
             "status": "success",
@@ -112,6 +102,3 @@ class CalendarTool(FunctionTool):
                 "location": created_event.get("location", "")
             }
         })
-
-    
-    

@@ -109,7 +109,7 @@ assistant = (
 def root():
     return {"message": "Image-to-calendar AI agent is running!"}
 
-@app.get("/test-local/{filename}")
+# @app.get("/test-local/{filename}")
 def test_local(filename: str):
     image_path = f"test_images/{filename}"
 
@@ -147,6 +147,7 @@ def test_local(filename: str):
         "response": output[0].content
     }
 
+test_local("test_image_2.jpg")
 
 @app.post("/test-upload/")
 async def test_upload(file: UploadFile = File(...)):
@@ -188,30 +189,3 @@ async def test_upload(file: UploadFile = File(...)):
     }
 
 
-
-@app.get("/login")
-def login():
-    flow = Flow.from_client_secrets_file(
-        GOOGLE_CLIENT_SECRETS_FILE,
-        scopes=SCOPES,
-        redirect_uri=REDIRECT_URI,
-    )
-    authorization_url, state = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true"
-    )
-    
-    return RedirectResponse(authorization_url)
-
-
-
-@app.get("/oauth2callback")
-def oauth2callback(request: Request):
-    flow = Flow.from_client_secrets_file(
-        GOOGLE_CLIENT_SECRETS_FILE,
-        scopes=SCOPES,
-        redirect_uri=REDIRECT_URI
-    )
-    flow.fetch_token(authorization_response=str(request.url))
-
-    credentials = flow.credentials 
