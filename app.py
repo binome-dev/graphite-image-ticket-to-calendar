@@ -61,7 +61,6 @@ Return the result in this exact JSON structure:
 If the end time isn't specified, you can omit it or leave it as null.
 """
 
-
 action_llm_system_message = """
 You are an AI assistant responsible for analyzing extracted event information and determining whether it is complete. 
 If any required fields (title, date, time, location) are missing or unclear, call the function `ask_user` to request clarification.

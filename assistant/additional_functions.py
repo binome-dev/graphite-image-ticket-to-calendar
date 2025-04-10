@@ -1,9 +1,11 @@
 import os
 import json
 import datetime
+from datetime import datetime, timedelta
 
 from grafi.tools.functions.function_tool import FunctionTool
 from grafi.common.decorators.llm_function import llm_function
+
 
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
@@ -54,9 +56,7 @@ class CalendarTool(FunctionTool):
         location: str = None,
         **kwargs
     ) -> str:
-        """
-        Adds an event to Google Calendar using a service account.
-        """
+
 
         SERVICE_ACCOUNT_FILE = "secrets/service-account.json"
         SCOPES = ["https://www.googleapis.com/auth/calendar"]
@@ -66,18 +66,27 @@ class CalendarTool(FunctionTool):
         )
         service = build("calendar", "v3", credentials=credentials)
 
+      
         if start_time:
             start_dt = f"{event_date}T{start_time}:00"
+            start_obj = datetime.strptime(start_dt, "%Y-%m-%dT%H:%M:%S")
+            
             if end_time:
                 end_dt = f"{event_date}T{end_time}:00"
+                end_obj = datetime.strptime(end_dt, "%Y-%m-%dT%H:%M:%S")
+                
+           
+                if end_obj <= start_obj:
+            
+                    end_obj = end_obj + timedelta(days=1)
             else:
-                start_obj = datetime.datetime.strptime(start_dt, "%Y-%m-%dT%H:%M:%S")
-                end_obj = start_obj + datetime.timedelta(hours=1)
-                end_dt = end_obj.strftime("%Y-%m-%dT%H:%M:%S")
+                
+                end_obj = start_obj + timedelta(hours=1)
 
-            start = {"dateTime": start_dt, "timeZone": "UTC"}
-            end = {"dateTime": end_dt, "timeZone": "UTC"}
+            start = {"dateTime": start_obj.strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"}
+            end = {"dateTime": end_obj.strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"}
         else:
+        
             start = {"date": event_date}
             end = {"date": event_date}
 
@@ -90,6 +99,12 @@ class CalendarTool(FunctionTool):
         if location:
             event["location"] = location
 
+        
+        print("DEBUG: calendar ID =", calendar_id)
+        print("DEBUG: event payload:")
+        print(json.dumps(event, indent=2))
+
+        
         created_event = service.events().insert(calendarId=calendar_id, body=event).execute()
 
         return json.dumps({
