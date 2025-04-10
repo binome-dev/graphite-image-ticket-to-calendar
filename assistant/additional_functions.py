@@ -16,8 +16,6 @@ load_dotenv()
 
 calendar_id = os.getenv("GOOGLE_CALENDAR_ID", "primary")
 
-print("📅 Using calendar ID:", calendar_id)
-
 
 class AskUserTool(FunctionTool):
 
