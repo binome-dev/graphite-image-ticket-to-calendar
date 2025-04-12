@@ -3,25 +3,15 @@ import uuid
 import base64
 import json
 
-from google_auth_oauthlib.flow import Flow
-from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
-
 from fastapi.responses import RedirectResponse
 from fastapi import Request
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File
 
-
 from assistant.image_to_calendar_agent import ImageToCalendar
 from grafi.common.models.execution_context import ExecutionContext
 from grafi.common.models.message import Message 
-
-
-GOOGLE_CLIENT_SECRETS_FILE = "client_secret.json"
-SCOPES = ["https://www.googleapis.com/auth/calendar"]
-REDIRECT_URI = "http://localhost:8000/oauth2callback"
 
 
 openai_key = os.getenv("OPENAI_KEY")
@@ -145,8 +135,7 @@ def test_local(filename: str):
         "execution_context": execution_context.model_dump(),
         "response": output[0].content
     }
-
-test_local("test_image_2.jpg")
+test_local("test_image_3.jpg")
 
 @app.post("/test-upload/")
 async def test_upload(file: UploadFile = File(...)):
