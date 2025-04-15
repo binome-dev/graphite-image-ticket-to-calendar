@@ -135,10 +135,11 @@ def test_local(filename: str):
         "execution_context": execution_context.model_dump(),
         "response": output[0].content
     }
+
 test_local("test_image_3.jpg")
 
-@app.post("/test-upload/")
-async def test_upload(file: UploadFile = File(...)):
+@app.post("/upload/")
+async def upload(file: UploadFile = File(...)):
     
     image_bytes = await file.read()
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")

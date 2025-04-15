@@ -82,13 +82,32 @@ class ImageToCalendar(Assistant):
 
      
         event_extracted_topic = Topic(name="event_extracted_topic")
+
+
         incomplete_info_topic = Topic(
             name="incomplete_info_topic",
             condition=lambda msgs: msgs[-1].tool_calls and msgs[-1].tool_calls[0].function.name == "ask_user"
+
+            # This condition will check if the last message published from the agent to the topic was a call to trigger the `ask_user`. This is done by using 
+            # msgs[-1] which will check the last message posted, then the msgs[-1].tool_calls checks if there was any function call in the latest message,
+            # and then finally the tool_calls[0].function.name == "ask_user" will check whether the function that is being called is specifically ask_user
+
+            # Note: The `ask_user` is an additional function needed in case the provided image does not contain enough information to post an event on the calendar
+            # The code for it can be found in additional_functions.py
+
+            #Note: The agent decides whether the information is complete or not based on the conditions defined in the prompt provided to the system 
+
+
         )
+
         complete_info_topic = Topic(
             name="complete_info_topic",
             condition=lambda msgs: msgs[-1].tool_calls and msgs[-1].tool_calls[0].function.name == "add_event_to_calendar"
+
+            # Same logic as with incomplete_info_topic,
+            # 1) msgs[-1]: This accesses the most recent message published to the topic.
+            # 2) msgs[-1].tool_calls: This checks if the last message contains any "tool calls".
+            # 3) msgs[-1].tool_calls[0].function.name == "add_event_to_calendar"`: This checks if the function called in the last message is `add_event_to_calendar` which will actually trigger the even posting to Google Calendar
         )
         calendar_response_topic = Topic(name="calendar_response_topic")
         human_request_topic = Topic(name="human_request_topic")

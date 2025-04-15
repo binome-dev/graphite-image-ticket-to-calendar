@@ -97,13 +97,11 @@ class CalendarTool(FunctionTool):
         if location:
             event["location"] = location
 
-        
-        print("DEBUG: calendar ID =", calendar_id)
-        print("DEBUG: event payload:")
-        print(json.dumps(event, indent=2))
-
-        
-        created_event = service.events().insert(calendarId=calendar_id, body=event).execute()
+        try:
+            created_event = service.events().insert(calendarId=calendar_id, body=event).execute()
+        except Exception as e:
+            print(f"Error creating event: {e}")
+            return json.dumps({"status": "error", "message": str(e)})
 
         return json.dumps({
             "status": "success",
