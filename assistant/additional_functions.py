@@ -17,6 +17,7 @@ load_dotenv()
 calendar_id = os.getenv("GOOGLE_CALENDAR_ID", "primary")
 
 
+
 class AskUserTool(FunctionTool):
 
     @staticmethod
@@ -97,11 +98,8 @@ class CalendarTool(FunctionTool):
         if location:
             event["location"] = location
 
-        try:
-            created_event = service.events().insert(calendarId=calendar_id, body=event).execute()
-        except Exception as e:
-            print(f"Error creating event: {e}")
-            return json.dumps({"status": "error", "message": str(e)})
+        
+        created_event = service.events().insert(calendarId=calendar_id, body=event).execute()
 
         return json.dumps({
             "status": "success",

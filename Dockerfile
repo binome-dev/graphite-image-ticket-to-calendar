@@ -20,8 +20,9 @@ COPY . .
 
 
 RUN poetry config virtualenvs.create false \
- && poetry install --no-root --no-interaction --no-ansi
+    && poetry install --no-root --no-interaction --no-ansi
 
 EXPOSE 80
+
 
 CMD ["poetry", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]

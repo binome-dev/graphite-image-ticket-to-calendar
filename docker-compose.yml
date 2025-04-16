@@ -26,7 +26,6 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./test_images:/app/test_images
       - ./secrets/service-account.json:/secrets/service-account.json
     networks:
       - net
