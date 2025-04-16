@@ -103,46 +103,6 @@ assistant = (
 def root():
     return {"message": "Image-to-calendar AI agent is running!"}
 
-@app.get("/test-local/{filename}")
-def test_local(filename: str):
-    image_path = f"test_images/{filename}"
-
-    with open(image_path, "rb") as f:
-        image_bytes = f.read()
-
-    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
-    message1 = Message(role="user", content=f"data:image/jpeg;base64,{image_base64}")
-
-    input_data = [
-        Message(
-            content=[
-                {"type": "text", "text": "Extract important info as per your instructions"},
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{image_base64}",
-                    },
-                },
-            ],
-            role="user",
-        )
-    ]
-
-    execution_context = ExecutionContext(
-        conversation_id=uuid.uuid4().hex,
-        assistant_request_id=uuid.uuid4().hex,
-        execution_id=uuid.uuid4().hex,
-    )
-
-    output = assistant.execute(execution_context, input_data)
-
-    return {
-        "execution_context": execution_context.model_dump(),
-        "response": output[0].content
-    }
-
-
 @app.post("/upload/")
 async def upload(file: UploadFile = File(...)):
     

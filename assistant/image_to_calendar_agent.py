@@ -130,7 +130,7 @@ class ImageToCalendar(Assistant):
                  OpenAITool.Builder()
                  .name("VisionLLM")
                  .api_key(self.api_key)
-                 .model("gpt-4-vision-preview") 
+                 .model(self.model) 
                  .system_message(self.event_extraction_system_message)  
                  .build()
              )
