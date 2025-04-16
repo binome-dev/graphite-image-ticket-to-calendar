@@ -121,27 +121,24 @@ class ImageToCalendar(Assistant):
         human_request_topic = Topic(name="human_request_topic")
 
         vision_node = (
-            LLMNode.Builder()
-            .name("VisionNode")
-            .subscribe(agent_input_topic)
-            .command(
-                LLMResponseCommand.Builder()
-                .llm(
-                    OpenAITool.Builder()
-                    .name("VisionLLM")
-                    .api_key(self.api_key)
-                    .model(self.model)
-                    .system_message(self.event_extraction_system_message)
-                    .build()
-                )
-                .build()
-            )
-            .publish_to(event_extracted_topic)
-            .build()
-        )
-        .publish_to(event_extracted_topic)
-        .build()
-        )
+         LLMNode.Builder()
+         .name("VisionNode")
+         .subscribe(agent_input_topic)
+         .command(
+             LLMResponseCommand.Builder()
+             .llm(
+                 OpenAITool.Builder()
+                 .name("VisionLLM")
+                 .api_key(self.api_key)
+                 .model(self.model) 
+                 .system_message(self.event_extraction_system_message)  
+                 .build()
+             )
+             .build()
+         )
+         .publish_to(event_extracted_topic)
+         .build()
+         )
         
         workflow_agent.node(vision_node)
 
