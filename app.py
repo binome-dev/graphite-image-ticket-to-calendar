@@ -2,6 +2,7 @@ import os
 import uuid
 import base64
 import json
+from datetime import datetime
 
 from fastapi.responses import RedirectResponse
 from fastapi import Request
@@ -10,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File
 
 from assistant.image_to_calendar_agent import ImageToCalendar
+from assistant.additional_functions import *
 from grafi.common.models.execution_context import ExecutionContext
 from grafi.common.models.message import Message 
 
@@ -28,6 +30,8 @@ app.add_middleware(
 )
 
 
+
+
 event_extraction_system_message = """
 You are an AI assistant responsible for extracting calendar event information from uploaded images.
 Your task is to analyze the image and return all relevant event details, including:
@@ -37,6 +41,8 @@ Your task is to analyze the image and return all relevant event details, includi
 - start_time (in HH:MM, 24-hour format)
 - end_time (in HH:MM, 24-hour format, optional if not present)
 - location
+
+If the year is not explicitly mentioned in the date, assume the current year.
 
 Return the result in this exact JSON structure:
 
@@ -48,7 +54,7 @@ Return the result in this exact JSON structure:
   "location": "Event Location"
 }
 
-If the end time isn't specified, you can omit it or leave it as null.
+If the year is not specified, assume the year is 2025.
 """
 
 action_llm_system_message = """
@@ -98,7 +104,7 @@ assistant = (
 def root():
     return {"message": "Image-to-calendar AI agent is running!"}
 
-# @app.get("/test-local/{filename}")
+@app.get("/test-local/{filename}")
 def test_local(filename: str):
     image_path = f"test_images/{filename}"
 
@@ -136,7 +142,6 @@ def test_local(filename: str):
         "response": output[0].content
     }
 
-test_local("test_image_3.jpg")
 
 @app.post("/upload/")
 async def upload(file: UploadFile = File(...)):
@@ -169,8 +174,6 @@ async def upload(file: UploadFile = File(...)):
     )
     
     output = assistant.execute(execution_context, input_data)
-    
-    # output = await assistant.execute(execution_context, input_data)
     
     return {
         "execution_context": execution_context.model_dump(),
