@@ -1,7 +1,6 @@
+import base64
 import os
 import uuid
-import base64
-import json
 
 from fastapi.responses import RedirectResponse
 from fastapi import Request
@@ -11,20 +10,21 @@ from fastapi import FastAPI, UploadFile, File
 
 from assistant.image_to_calendar_agent import ImageToCalendar
 from grafi.common.models.execution_context import ExecutionContext
-from grafi.common.models.message import Message 
+from grafi.common.models.message import Message
 
+from assistant.image_to_calendar_agent import ImageToCalendar
 
-openai_key = os.getenv("OPENAI_KEY")
+openai_key = os.getenv("OPENAI_KEY", "")
 
 app = FastAPI()
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  
-    allow_headers=["*"],  
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -84,7 +84,7 @@ Make sure the summary is friendly, easy to understand, and reaffirms the event w
 
 assistant = (
     ImageToCalendar.Builder()
-    .api_key(openai_key) 
+    .api_key(openai_key)
     .event_extraction_system_message(event_extraction_system_message)
     .action_llm_system_message(action_llm_system_message)
     .observation_llm_system_message(observation_llm_system_message)
@@ -107,6 +107,7 @@ def test_local(filename: str):
 
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
+    message1 = Message(role="user", content=f"data:image/jpeg;base64,{image_base64}")
 
     input_data = [
         Message(
@@ -174,7 +175,7 @@ async def upload(file: UploadFile = File(...)):
     
     return {
         "execution_context": execution_context.model_dump(),
-        "response": output[0].content
+        "response": output[0].content,
     }
 
 
