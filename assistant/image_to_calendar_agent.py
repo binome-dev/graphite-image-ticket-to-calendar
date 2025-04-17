@@ -170,13 +170,37 @@ class ImageToCalendar(Assistant):
             .name("AskUserNode")
             .subscribe(incomplete_info_topic)
             .command(
-                FunctionCallingCommand.Builder().function_tool(self.ask_user).build()
+                FunctionCallingCommand.Builder()
+                .function_tool(self.ask_user)
+                .build()
             )
             .publish_to(human_request_topic)
             .build()
         )
 
         workflow_agent.node(additional_info_node)
+
+        followup_node = (
+            LLMNode.Builder()
+            .name("FollowupQuestionNode")
+            .subscribe(human_request_topic)
+            .command(
+                LLMResponseCommand.Builder()
+                .llm(
+                    OpenAITool.Builder()
+                    .name("FollowupLLM")
+                    .api_key(self.api_key)
+                    .model(self.model)
+                    .system_message("Ask the user for the missing event information in a clear and friendly way.")
+                    .build()
+                )
+                .build()
+            )
+            .publish_to(agent_output_topic)  
+            .build()
+        )
+
+        workflow_agent.node(followup_node)
 
         calendar_node = (
             LLMFunctionCallNode.Builder()
