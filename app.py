@@ -15,12 +15,9 @@ from grafi.common.models.execution_context import ExecutionContext
 from grafi.common.models.message import Message
 
 from assistant.image_to_calendar_agent import ImageToCalendar
-
-
 from pydantic import BaseModel
 
-class MessageRequest(BaseModel):
-    message: str
+
 
 openai_key = os.getenv("OPENAI_KEY", "")
 
@@ -134,11 +131,12 @@ assistant = (
 def root():
     return {"message": "Image-to-calendar AI agent is running!"}
 
-conversation_store = {}  
 
 @app.post("/upload/")
 async def upload(file: UploadFile = File(...)):
-    conversation_id = "webchat"
+
+    conversation_id = uuid.uuid4().hex  
+
     image_bytes = await file.read()
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
     mime_type = file.content_type
@@ -153,55 +151,39 @@ async def upload(file: UploadFile = File(...)):
         )
     ]
 
-    if conversation_id not in conversation_store:
-        conversation_store[conversation_id] = []
-    conversation_store[conversation_id].extend(input_data)
-
     execution_context = ExecutionContext(
         conversation_id=conversation_id,
         execution_id=uuid.uuid4().hex,
         assistant_request_id=uuid.uuid4().hex,
     )
 
-    output = assistant.execute(execution_context, conversation_store[conversation_id])
-    conversation_store[conversation_id].extend(output)
+    output = assistant.execute(execution_context, input_data)
 
     return {
+        "conversation_id": conversation_id,  
         "execution_context": execution_context.model_dump(),
-        "response": output[0].content 
+        "response": output[0].content
     }
+
+
+class MessageRequest(BaseModel):
+    message: str
+    conversation_id: str 
 
 
 @app.post("/message/")
 async def message(req: MessageRequest):
-    conversation_id = "webchat"
-    user_input = req.message
-
-    if conversation_id not in conversation_store:
-        conversation_store[conversation_id] = []
-
-    conversation_store[conversation_id].append(
-    Message(role="user", content=req.message)
-    )
+    user_message = Message(role="user", content=req.message)
 
     execution_context = ExecutionContext(
-        conversation_id=conversation_id,
+        conversation_id=req.conversation_id,  
         execution_id=uuid.uuid4().hex,
         assistant_request_id=uuid.uuid4().hex,
     )
 
-    output = assistant.execute(execution_context, conversation_store[conversation_id])
-    conversation_store[conversation_id].extend(output)
-
-    responses = []
-    for msg in output:
-        try:
-            parsed = json.loads(msg.content)
-            responses.append(parsed.get("question_description", msg.content))
-        except Exception:
-            responses.append(msg.content)
+    output = assistant.execute(execution_context, [user_message])
 
     return {
         "execution_context": execution_context.model_dump(),
-        "response": " ".join(responses),
+        "response": output[0].content
     }
