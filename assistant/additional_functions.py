@@ -2,6 +2,7 @@ import os
 import json
 import datetime
 from datetime import datetime, timedelta
+from typing import Union
 
 from grafi.tools.functions.function_tool import FunctionTool
 from grafi.common.decorators.llm_function import llm_function
@@ -20,18 +21,19 @@ calendar_id = os.getenv("GOOGLE_CALENDAR_ID", "primary")
 
 class AskUserTool(FunctionTool):
 
-    @staticmethod
     @llm_function
-    def ask_user(
-    *args,
-    missing_fields: list[str],
-    extracted_data: dict,
-    **kwargs 
-) -> str:
+    def ask_user(self, missing_fields: Union[list[str], str], extracted_data: dict) -> dict:
         """
-        This function handles missing data (e.g. date, time, location, or title)
-        and returns a natural language question asking the user for more info.
+        This function handles missing event data (e.g., date, time, location, or title)
+        and returns a natural language question asking the user for the missing information.
         """
+        print(">>> ask_user tool called with:")
+        print("missing_fields =", missing_fields)
+        print("extracted_data =", extracted_data)
+        
+        # Safety: convert string to list if needed
+        if isinstance(missing_fields, str):
+            missing_fields = [missing_fields]
 
         question_parts = [
             f"Please provide the event's {field.replace('_', ' ')}."
