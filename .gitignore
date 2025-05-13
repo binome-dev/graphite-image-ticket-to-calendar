@@ -4,6 +4,8 @@ secrets/
 *.json
 !secrets/service-account.json
 
+agent_no_hitl/
+
 # Byte-compiled / optimized / DLL files
 test_images/
 

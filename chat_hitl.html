@@ -80,7 +80,8 @@
 
   <script>
     const chatBox = document.getElementById("chat");
-    let conversationId = null; // 🔑 Track the current session ID
+    let conversationId = null;
+    let extractedData = null;
 
     function addMessage(role, content, isImage = false) {
       const msg = document.createElement("div");
@@ -122,20 +123,23 @@
         });
         const data = await res.json();
 
-        // Save conversation ID for future messages
         conversationId = data.conversation_id;
-
         let msg = data.response;
-        if (typeof msg === "object" && msg.question_description) {
-          msg = msg.question_description;
+
+        // Detect HITL
+        if (typeof msg === "object" && msg.tool_calls && msg.tool_calls[0].function.name === "ask_user") {
+          extractedData = msg.tool_calls[0].function.arguments.extracted_data;
+          const missing = msg.tool_calls[0].function.arguments.missing_fields;
+          msg = `Please provide: ${missing.join(", ")}`;
         } else if (typeof msg === "object") {
+          extractedData = null;
           msg = "📅 Event created:\n" +
                 `• Title: ${msg.title}\n` +
                 `• Date: ${msg.date}\n` +
                 `• Time: ${msg.start_time}${msg.end_time ? ' - ' + msg.end_time : ''}\n` +
                 `• Location: ${msg.location}`;
-        } else if (typeof msg !== "string") {
-          msg = JSON.stringify(msg, null, 2);
+        } else {
+          extractedData = null;
         }
 
         addMessage("agent", msg);
@@ -148,8 +152,7 @@
     async function sendText() {
       const textInput = document.getElementById("textInput");
       const message = textInput.value.trim();
-      if (!message) return;
-      if (!conversationId) return alert("Please upload an image first.");
+      if (!message || !conversationId) return;
 
       addMessage("user", message);
       textInput.value = "";
@@ -158,24 +161,29 @@
         const res = await fetch("http://localhost:8081/message/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            message, 
-            conversation_id: conversationId 
+          body: JSON.stringify({
+            message,
+            conversation_id: conversationId,
+            extracted_data: extractedData || null
           }),
         });
         const data = await res.json();
 
         let msg = data.response;
-        if (typeof msg === "object" && msg.question_description) {
-          msg = msg.question_description;
+
+        if (typeof msg === "object" && msg.tool_calls && msg.tool_calls[0].function.name === "ask_user") {
+          extractedData = msg.tool_calls[0].function.arguments.extracted_data;
+          const missing = msg.tool_calls[0].function.arguments.missing_fields;
+          msg = `Please provide: ${missing.join(", ")}`;
         } else if (typeof msg === "object") {
+          extractedData = null;
           msg = "📅 Event updated:\n" +
                 `• Title: ${msg.title}\n` +
                 `• Date: ${msg.date}\n` +
                 `• Time: ${msg.start_time}${msg.end_time ? ' - ' + msg.end_time : ''}\n` +
                 `• Location: ${msg.location}`;
-        } else if (typeof msg !== "string") {
-          msg = JSON.stringify(msg, null, 2);
+        } else {
+          extractedData = null;
         }
 
         addMessage("agent", msg);
